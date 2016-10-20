@@ -1,0 +1,7 @@
+[package]
+name = "cidr-tree"
+version = "0.1.0"
+authors = ["Andrew Matteson <amatteson3@gmail.com>"]
+
+[lib]
+name = "cidr_tree"
