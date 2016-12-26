@@ -3,8 +3,19 @@ use std::str::FromStr;
 use std::num;
 
 #[derive(Debug, PartialEq)]
+pub struct Prefix {
+    pub bits: net::Ipv4Addr,
+}
+
+impl Prefix {
+    pub fn octets(&self) -> [u8; 4] {
+        self.bits.octets()
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Cidr {
-    pub prefix: net::Ipv4Addr,
+    pub prefix: Prefix,
     pub length: u8,
 }
 
@@ -36,7 +47,7 @@ impl FromStr for Cidr {
             length = try!(parts[1].parse::<u8>());
         }
         return Ok(Cidr {
-            prefix: try!(net::Ipv4Addr::from_str(parts[0])),
+            prefix: Prefix { bits: try!(net::Ipv4Addr::from_str(parts[0])) },
             length: length,
         })
     }
@@ -45,11 +56,12 @@ impl FromStr for Cidr {
 impl Cidr {
     pub fn from_bits(bits: u32, length: u8) -> Option<Cidr> {
         Some(Cidr {
-            prefix: net::Ipv4Addr::new(
-                        (bits >> 24) as u8,
-                        (bits >> 16) as u8,
-                        (bits >>  8) as u8,
-                        (bits)       as u8),
+            prefix: Prefix {
+                bits: net::Ipv4Addr::new((bits >> 24) as u8,
+                                         (bits >> 16) as u8,
+                                         (bits >>  8) as u8,
+                                         (bits)       as u8)
+            },
             length: length,
         })
     }
