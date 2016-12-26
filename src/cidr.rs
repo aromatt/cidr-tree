@@ -66,6 +66,15 @@ impl Cidr {
         })
     }
 
+    pub fn from_slice(bits: [u8; 4], length: u8) -> Cidr {
+        Cidr {
+            prefix: Prefix {
+                bits: net::Ipv4Addr::new(bits[0], bits[1], bits[2], bits[3])
+            },
+            length: length,
+        }
+    }
+
     pub fn prefix_bits(&self) -> u32 {
         let octets = self.prefix.octets();
         ((octets[0] as u32) << 24) |
@@ -73,6 +82,19 @@ impl Cidr {
         ((octets[2] as u32) << 8) |
         ((octets[3] as u32))
     }
+
+    pub fn next(&self) -> Cidr {
+        let o = self.prefix.octets();
+        Cidr::from_slice([o[0] << 1, o[1] << 1, o[2] << 1, o[3] << 1], self.length - 2)
+    }
+
+    pub fn msbit(&self) -> u8 {
+        match self.prefix.octets()[0] & 0x80 {
+            0 => 0,
+            _ => 1
+        }
+    }
+
 }
 
 #[test]
@@ -86,4 +108,10 @@ fn test_from_str() {
     let from_bits = Cidr::from_bits(0x80000000, 1).unwrap();
     let from_str = Cidr::from_str("128.0.0.0/1").unwrap();
     assert!(from_bits == from_str);
+}
+
+#[test]
+fn test_msbit() {
+    assert!(Cidr::from_str("0.0.0.0/32").unwrap().msbit() == 0);
+    assert!(Cidr::from_str("255.0.0.0/32").unwrap().msbit() == 1);
 }

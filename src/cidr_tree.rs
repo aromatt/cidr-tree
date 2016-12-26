@@ -34,8 +34,8 @@ impl<T> CidrTree<T> where T: Debug {
         if let Some(ref d) = self.data {
             results.push(Some(d));
         }
-        let next_cidr = Cidr::from_bits(cidr.prefix_bits() << 1, cidr.length - 1).unwrap();
-        match cidr.prefix_bits() & 0x80000000 {
+        let next_cidr = cidr.next();
+        match cidr.msbit() {
             0 => {
                 match self.zero {
                     Some(ref child) => {
@@ -71,7 +71,7 @@ impl<T> CidrTree<T> where T: Debug {
         let next_cidr = Cidr::from_bits(cidr.prefix_bits() << 1, cidr.length - 1).unwrap();
 
         // TODO repetitive code
-        match cidr.prefix_bits() & 0x80000000 {
+        match cidr.msbit() {
             0 => {
                 match self.zero {
                     Some(ref mut child) => {
