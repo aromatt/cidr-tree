@@ -1,17 +1,7 @@
 use std::net;
 use std::str::FromStr;
 use std::num;
-
-#[derive(Debug, PartialEq)]
-pub struct Prefix {
-    pub bits: net::Ipv4Addr,
-}
-
-impl Prefix {
-    pub fn octets(&self) -> [u8; 4] {
-        self.bits.octets()
-    }
-}
+use prefix::Prefix;
 
 #[derive(Debug, PartialEq)]
 pub struct Cidr {
@@ -46,32 +36,28 @@ impl FromStr for Cidr {
         if parts.len() > 1 {
             length = try!(parts[1].parse::<u8>());
         }
+        let prefix = try!(Prefix::from_str(parts[0]));
         return Ok(Cidr {
-            prefix: Prefix { bits: try!(net::Ipv4Addr::from_str(parts[0])) },
+            prefix: prefix,
             length: length,
         })
     }
 }
 
 impl Cidr {
-    pub fn from_bits(bits: u32, length: u8) -> Option<Cidr> {
-        Some(Cidr {
-            prefix: Prefix {
-                bits: net::Ipv4Addr::new((bits >> 24) as u8,
-                                         (bits >> 16) as u8,
-                                         (bits >>  8) as u8,
-                                         (bits)       as u8)
-            },
+    pub fn new(prefix: Prefix, length: u8) -> Cidr {
+        Cidr {
+            prefix: prefix,
             length: length,
-        })
+        }
     }
 
-    pub fn prefix_bits(&self) -> u32 {
-        let octets = self.prefix.octets();
-        ((octets[0] as u32) << 24) |
-        ((octets[1] as u32) << 16) |
-        ((octets[2] as u32) << 8) |
-        ((octets[3] as u32))
+    pub fn next(&self) -> Cidr {
+        Cidr::new(self.prefix.shift_left(1), self.length - 1)
+    }
+
+    pub fn msbit(&self) -> u8 {
+        if self.length > 0 { self.prefix.msbit() } else { 0 }
     }
 }
 
@@ -83,7 +69,21 @@ fn test_from_str() {
     assert!(Cidr::from_str("1.2.3.4/32").unwrap().length == 32);
     assert!(Cidr::from_str("1.2.3.4/0").unwrap().length == 0);
 
-    let from_bits = Cidr::from_bits(0x80000000, 1).unwrap();
-    let from_str = Cidr::from_str("128.0.0.0/1").unwrap();
-    assert!(from_bits == from_str);
+    assert!(Cidr::from_str("0::/0").unwrap().length == 0);
+    assert!(Cidr::from_str("8000::/1").unwrap().length == 1);
+}
+
+#[test]
+fn test_next() {
+    assert!(Cidr::from_str("1.0.0.0/32").unwrap().next() ==
+            Cidr::from_str("2.0.0.0/31").unwrap());
+    assert!(Cidr::from_str("0.0.128.0/32").unwrap().next() ==
+            Cidr::from_str("0.1.0.0/31").unwrap());
+}
+
+#[test]
+fn test_msbit() {
+    assert!(0 == Cidr::from_str("1.0.0.0").unwrap().msbit());
+    assert!(1 == Cidr::from_str("128.0.0.0").unwrap().msbit());
+    assert!(0 == Cidr::from_str("128.0.0.0/0").unwrap().msbit());
 }

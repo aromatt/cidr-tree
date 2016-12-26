@@ -34,8 +34,9 @@ impl<T> CidrTree<T> where T: Debug {
         if let Some(ref d) = self.data {
             results.push(Some(d));
         }
-        let next_cidr = Cidr::from_bits(cidr.prefix_bits() << 1, cidr.length - 1).unwrap();
-        match cidr.prefix_bits() & 0x80000000 {
+        let next_cidr = cidr.next();
+        println!(" cidr: {:?}, msbit: {:?}", cidr, cidr.msbit());
+        match cidr.msbit() {
             0 => {
                 match self.zero {
                     Some(ref child) => {
@@ -57,6 +58,7 @@ impl<T> CidrTree<T> where T: Debug {
     }
 
     pub fn get_from_str(&self, cidr: &str) -> Vec<Option<&T>> {
+        println!("getting {:?}", Cidr::from_str(cidr).unwrap());
         self.get(&Cidr::from_str(cidr).unwrap())
     }
 
@@ -68,10 +70,10 @@ impl<T> CidrTree<T> where T: Debug {
         }
 
         // Next cidr is the incoming cidr shifted left by one
-        let next_cidr = Cidr::from_bits(cidr.prefix_bits() << 1, cidr.length - 1).unwrap();
+        let next_cidr = cidr.next();
 
         // TODO repetitive code
-        match cidr.prefix_bits() & 0x80000000 {
+        match cidr.msbit() {
             0 => {
                 match self.zero {
                     Some(ref mut child) => {
@@ -101,13 +103,13 @@ impl<T> CidrTree<T> where T: Debug {
 }
 
 #[test]
-fn test_insert_cidr() {
+fn test_insert_cidr_v4() {
     let mut t = CidrTree::<String>::new();
 
     t.insert_cidr(&Cidr::from_str("128.0.0.0/1").unwrap(), Some("first".to_string()));
-    //println!("now t: {:?}", t);
+    println!("\nnow t: {:?}\n", t);
     t.insert_cidr(&Cidr::from_str("255.0.0.0/2").unwrap(), Some("second".to_string()));
-    //println!("now t: {:?}", t);
+    println!("\nnow t: {:?}\n", t);
 
     assert!(t.get_from_str(&"1.0.0.0").is_empty());
     assert!(t.get_from_str(&"128.0.0.0").len() == 1);
@@ -116,4 +118,23 @@ fn test_insert_cidr() {
     assert!(t.get_from_str(&"255.0.0.0").len() == 2);
     assert!(t.get_from_str(&"255.1.0.0").len() == 2);
     assert!(t.get_from_str(&"255.0.0.0/8").len() == 2);
+}
+
+#[test]
+fn test_insert_cidr_v6() {
+    let mut t = CidrTree::<String>::new();
+
+    t.insert_cidr(&Cidr::from_str("8000:0:0:0::/1").unwrap(), Some("first".to_string()));
+    println!("\nnow t: {:?}\n", t);
+
+    t.insert_cidr(&Cidr::from_str("F000:0:0:0::/2").unwrap(), Some("second".to_string()));
+    println!("\nnow t: {:?}\n", t);
+
+    assert!(t.get_from_str(&"0001:0:0:0::").is_empty());
+    assert!(t.get_from_str(&"8000::").len() == 1);
+    assert!(t.get_from_str(&"8000::1").len() == 1);
+    assert!(t.get_from_str(&"8000::/8").len() == 1);
+    assert!(t.get_from_str(&"F000::").len() == 2);
+    assert!(t.get_from_str(&"F800::").len() == 2);
+    assert!(t.get_from_str(&"F000::/8").len() == 2);
 }
