@@ -62,7 +62,7 @@ impl<T> CidrTree<T> where T: Debug {
         self.get(&Cidr::from_str(cidr).unwrap())
     }
 
-    pub fn insert_cidr(&mut self, cidr: &Cidr, data: Option<T>) {
+    pub fn insert(&mut self, cidr: &Cidr, data: Option<T>) {
         // Search is over; this node is where the data goes
         if cidr.length == 0 {
             self.data = data;
@@ -77,11 +77,11 @@ impl<T> CidrTree<T> where T: Debug {
             0 => {
                 match self.zero {
                     Some(ref mut child) => {
-                        child.insert_cidr(&next_cidr, data);
+                        child.insert(&next_cidr, data);
                     },
                     None => {
                         let mut child = CidrTree::<T>::new();
-                        child.insert_cidr(&next_cidr, data);
+                        child.insert(&next_cidr, data);
                         self.zero = Some(Box::new(child));
                     },
                 }
@@ -89,11 +89,11 @@ impl<T> CidrTree<T> where T: Debug {
             _ => {
                 match self.one {
                     Some(ref mut child) => {
-                        child.insert_cidr(&next_cidr, data);
+                        child.insert(&next_cidr, data);
                     },
                     None => {
                         let mut child = CidrTree::<T>::new();
-                        child.insert_cidr(&next_cidr, data);
+                        child.insert(&next_cidr, data);
                         self.one = Some(Box::new(child));
                     },
                 }
@@ -103,16 +103,24 @@ impl<T> CidrTree<T> where T: Debug {
 }
 
 #[test]
-fn test_insert_cidr_v4() {
+fn test_insert_v4() {
     let mut t = CidrTree::<String>::new();
 
-    t.insert_cidr(&Cidr::from_str("128.0.0.0/1").unwrap(), Some("first".to_string()));
-    println!("\nnow t: {:?}\n", t);
-    t.insert_cidr(&Cidr::from_str("255.0.0.0/2").unwrap(), Some("second".to_string()));
-    println!("\nnow t: {:?}\n", t);
+    t.insert(&Cidr::from_str("128.0.0.0/1").unwrap(), Some("first".to_string()));
 
     assert!(t.get_from_str(&"1.0.0.0").is_empty());
     assert!(t.get_from_str(&"128.0.0.0").len() == 1);
+    assert!(t.get_from_str(&"255.0.0.0").len() == 1);
+    assert!(t.get_from_str(&"128.0.0.0")[0].unwrap() == "first");
+    assert!(t.get_from_str(&"128.1.0.0").len() == 1);
+    assert!(t.get_from_str(&"128.0.0.0/8").len() == 1);
+
+    t.insert(&Cidr::from_str("255.0.0.0/2").unwrap(), Some("second".to_string()));
+
+    assert!(t.get_from_str(&"1.0.0.0").is_empty());
+    assert!(t.get_from_str(&"128.0.0.0").len() == 1);
+    assert!(t.get_from_str(&"255.0.0.0").len() == 2);
+    assert!(t.get_from_str(&"128.0.0.0")[0].unwrap() == "first");
     assert!(t.get_from_str(&"128.1.0.0").len() == 1);
     assert!(t.get_from_str(&"128.0.0.0/8").len() == 1);
     assert!(t.get_from_str(&"255.0.0.0").len() == 2);
@@ -121,17 +129,21 @@ fn test_insert_cidr_v4() {
 }
 
 #[test]
-fn test_insert_cidr_v6() {
+fn test_insert_v6() {
     let mut t = CidrTree::<String>::new();
 
-    t.insert_cidr(&Cidr::from_str("8000:0:0:0::/1").unwrap(), Some("first".to_string()));
-    println!("\nnow t: {:?}\n", t);
+    t.insert(&Cidr::from_str("8000:0:0:0::/1").unwrap(), Some("first".to_string()));
+    assert!(t.get_from_str(&"0001:0:0:0::").is_empty());
+    assert!(t.get_from_str(&"8000::").len() == 1);
+    assert!(t.get_from_str(&"F000::").len() == 1);
+    assert!(t.get_from_str(&"8000::1").len() == 1);
+    assert!(t.get_from_str(&"8000::/8").len() == 1);
 
-    t.insert_cidr(&Cidr::from_str("F000:0:0:0::/2").unwrap(), Some("second".to_string()));
-    println!("\nnow t: {:?}\n", t);
+    t.insert(&Cidr::from_str("F000:0:0:0::/2").unwrap(), Some("second".to_string()));
 
     assert!(t.get_from_str(&"0001:0:0:0::").is_empty());
     assert!(t.get_from_str(&"8000::").len() == 1);
+    assert!(t.get_from_str(&"F000::").len() == 2);
     assert!(t.get_from_str(&"8000::1").len() == 1);
     assert!(t.get_from_str(&"8000::/8").len() == 1);
     assert!(t.get_from_str(&"F000::").len() == 2);
