@@ -35,7 +35,6 @@ impl<T> CidrTree<T> where T: Debug {
             results.push(d);
         }
         let next_cidr = cidr.next();
-        println!(" cidr: {:?}, msbit: {:?}", cidr, cidr.msbit());
         match cidr.msbit() {
             0 => {
                 match self.zero {
@@ -58,7 +57,6 @@ impl<T> CidrTree<T> where T: Debug {
     }
 
     pub fn get_from_str(&self, cidr: &str) -> Vec<&T> {
-        println!("getting {:?}", Cidr::from_str(cidr).unwrap());
         self.get(&Cidr::from_str(cidr).unwrap())
     }
 
