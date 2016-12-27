@@ -11,25 +11,25 @@ IP addresses and networks) and the values are `T`.
 Insert data into the tree using `insert()`, which accepts a key (an IP address or network) and
 a value.
 You can then query the tree to determine the values associated with a given key and all
-networks which include that key. Results are returned as a `Vec<Option<T>>`.
+networks which include that key. Results are returned as a `Vec<T>`.
 
 ### Examples
 ```rust
 let mut tree = CidrTree::<String>::new();
 
 let cidr = Cidr::from_str("128.0.0.0/1").unwrap();
-tree.insert(&cidr, Some("first".to_string()));
+tree.insert(&cidr, "first".to_string());
 
 let fetched = t.get_from_str(&"128.0.0.0");
 assert!(fetched.len() == 1);
-assert!(fetched[0].unwrap() == "first");
+assert!(fetched[0] == "first");
 ```
 
 ```rust
 let mut tree = CidrTree::<String>::new();
 
-tree.insert(&Cidr::from_str("128.0.0.0/1").unwrap(), Some("first".to_string()));
-tree.insert(&Cidr::from_str("255.0.0.0/8").unwrap(), Some("second".to_string()));
+tree.insert(&Cidr::from_str("128.0.0.0/1").unwrap(), "first".to_string());
+tree.insert(&Cidr::from_str("255.0.0.0/8").unwrap(), "second".to_string());
 
 assert!(t.get_from_str(&"128.0.0.0").len() == 1);
 
@@ -44,7 +44,7 @@ assert!(t.get_from_str(&"255.0.0.0/8").len() == 2);
 let mut tree = CidrTree::<String>::new();
 
 # IPv6
-tree.insert(&Cidr::from_str("8000:0:0:0::"/1).unwrap(), Some("first".to_string()));
+tree.insert(&Cidr::from_str("8000:0:0:0::"/1).unwrap(), "first".to_string());
 
 assert!(t.get_from_str(&"8000:0:0:0::").len() == 1);
 assert!(t.get_from_str(&"F000::").len() == 1);

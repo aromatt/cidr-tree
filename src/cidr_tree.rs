@@ -27,12 +27,12 @@ impl<T> CidrTree<T> where T: Debug {
     }
 
     // Returns a vector of all the data that applies the queried CIDR
-    pub fn get(&self, cidr: &Cidr) -> Vec<Option<&T>> {
-        let mut results = Vec::<Option<&T>>::new();
+    pub fn get(&self, cidr: &Cidr) -> Vec<&T> {
+        let mut results = Vec::<&T>::new();
 
         // I might have something to contribute
         if let Some(ref d) = self.data {
-            results.push(Some(d));
+            results.push(d);
         }
         let next_cidr = cidr.next();
         println!(" cidr: {:?}, msbit: {:?}", cidr, cidr.msbit());
@@ -57,7 +57,7 @@ impl<T> CidrTree<T> where T: Debug {
         results
     }
 
-    pub fn get_from_str(&self, cidr: &str) -> Vec<Option<&T>> {
+    pub fn get_from_str(&self, cidr: &str) -> Vec<&T> {
         println!("getting {:?}", Cidr::from_str(cidr).unwrap());
         self.get(&Cidr::from_str(cidr).unwrap())
     }
@@ -111,7 +111,7 @@ fn test_insert_v4() {
     assert!(t.get_from_str(&"1.0.0.0").is_empty());
     assert!(t.get_from_str(&"128.0.0.0").len() == 1);
     assert!(t.get_from_str(&"255.0.0.0").len() == 1);
-    assert!(t.get_from_str(&"128.0.0.0")[0].unwrap() == "first");
+    assert!(t.get_from_str(&"128.0.0.0")[0] == "first");
     assert!(t.get_from_str(&"128.1.0.0").len() == 1);
     assert!(t.get_from_str(&"128.0.0.0/8").len() == 1);
 
@@ -120,7 +120,7 @@ fn test_insert_v4() {
     assert!(t.get_from_str(&"1.0.0.0").is_empty());
     assert!(t.get_from_str(&"128.0.0.0").len() == 1);
     assert!(t.get_from_str(&"255.0.0.0").len() == 2);
-    assert!(t.get_from_str(&"128.0.0.0")[0].unwrap() == "first");
+    assert!(t.get_from_str(&"128.0.0.0")[0] == "first");
     assert!(t.get_from_str(&"128.1.0.0").len() == 1);
     assert!(t.get_from_str(&"128.0.0.0/8").len() == 1);
     assert!(t.get_from_str(&"255.0.0.0").len() == 2);
