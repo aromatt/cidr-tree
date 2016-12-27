@@ -35,7 +35,6 @@ impl<T> CidrTree<T> where T: Debug {
             results.push(Some(d));
         }
         let next_cidr = cidr.next();
-        println!(" cidr: {:?}, msbit: {:?}", cidr, cidr.msbit());
         match cidr.msbit() {
             0 => {
                 match self.zero {
@@ -57,8 +56,47 @@ impl<T> CidrTree<T> where T: Debug {
         results
     }
 
-    pub fn get_from_str(&self, cidr: &str) -> Vec<Option<&T>> {
-        println!("getting {:?}", Cidr::from_str(cidr).unwrap());
+    pub fn has_exact(&self, cidr: &Cidr) -> bool {
+        // We have a node that matches the query
+        if cidr.length == 0 { return true; }
+
+        match cidr.msbit() {
+            0 => {
+                match self.zero {
+                    Some(ref child) => child.has_exact(&cidr.next()),
+                    None => false
+                }
+            },
+            _ => {
+                match self.one {
+                    Some(ref child) => child.has_exact(&cidr.next()),
+                    None => false
+                }
+            },
+        }
+    }
+
+    pub fn covers(&self, cidr: &Cidr) -> bool {
+        // We have a node that matches the query
+        if cidr.length == 0 { return true; }
+
+        match cidr.msbit() {
+            0 => {
+                match self.zero {
+                    Some(ref child) => child.covers(&cidr.next()),
+                    None => true
+                }
+            },
+            _ => {
+                match self.one {
+                    Some(ref child) => child.covers(&cidr.next()),
+                    None => true
+                }
+            },
+        }
+    }
+
+    pub fn get_from_str(&self, cidr: &str) -> Vec<&T> {
         self.get(&Cidr::from_str(cidr).unwrap())
     }
 
@@ -149,4 +187,35 @@ fn test_insert_v6() {
     assert!(t.get_from_str(&"F000::").len() == 2);
     assert!(t.get_from_str(&"F800::").len() == 2);
     assert!(t.get_from_str(&"F000::/8").len() == 2);
+}
+
+#[test]
+fn test_has_exact() {
+    let mut t = CidrTree::<String>::new();
+
+    t.insert(&Cidr::from_str("128.0.0.0/1").unwrap(), None);
+
+    assert!(!t.has_exact(&Cidr::from_str("1.0.0.0").unwrap()));
+    assert!(t.has_exact(&Cidr::from_str("128.0.0.0/1").unwrap()));
+    assert!(t.has_exact(&Cidr::from_str("128.0.0.0/0").unwrap()));
+    assert!(!t.has_exact(&Cidr::from_str("128.0.0.0/32").unwrap()));
+
+    t.insert(&Cidr::from_str("255.0.0.0/8").unwrap(), None);
+
+    assert!(t.has_exact(&Cidr::from_str("255.0.0.0/8").unwrap()));
+    assert!(!t.has_exact(&Cidr::from_str("128.0.0.0/8").unwrap()));
+}
+
+#[test]
+fn test_covers() {
+    let mut t = CidrTree::<String>::new();
+
+    assert!(t.covers(&Cidr::from_str("0.0.0.0/0").unwrap()));
+    assert!(!t.covers(&Cidr::from_str("128.0.0.0/1").unwrap()));
+
+    t.insert(&Cidr::from_str("128.0.0.0/1").unwrap(), None);
+
+    assert!(t.covers(&Cidr::from_str("128.0.0.0/1").unwrap()));
+    assert!(t.covers(&Cidr::from_str("128.0.0.0/32").unwrap()));
+    assert!(!t.covers(&Cidr::from_str("1.0.0.0").unwrap()));
 }
