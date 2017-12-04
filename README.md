@@ -44,7 +44,7 @@ assert!(t.get_from_str(&"255.0.0.0/8").len() == 2);
 let mut tree = CidrTree::<String>::new();
 
 # IPv6
-tree.insert(&Cidr::from_str("8000:0:0:0::"/1).unwrap(), "first".to_string());
+tree.insert(&Cidr::from_str("8000:0:0:0::/1").unwrap(), "first".to_string());
 
 assert!(t.get_from_str(&"8000:0:0:0::").len() == 1);
 assert!(t.get_from_str(&"F000::").len() == 1);
