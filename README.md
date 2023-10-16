@@ -10,8 +10,8 @@ IP addresses and networks) and the values are `T`.
 ## Usage
 Insert data into the tree using `insert()`, which accepts a key (an IP address or network) and
 a value.
-You can then query the tree to determine the values associated with a given key and all
-networks which include that key. Results are returned as a `Vec<T>`.
+You can then query the tree for given CIDR. The return value is a `Vec<T>` containing the value
+associated with the input CIDR as well as those of all its parent CIDRs.
 
 ### Examples
 ```rust
